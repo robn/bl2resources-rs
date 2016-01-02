@@ -1,0 +1,188 @@
+use std::collections::BTreeMap;
+use std::error::Error;
+use std::fmt;
+use std::{i32,usize};
+use rustc_serialize::json::{Json,ToJson};
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum ParseError {
+    InvalidJsonType(String),
+    MissingField(String),
+}
+
+impl Error for ParseError {
+    fn description(&self) -> &str {
+        match *self {
+            ParseError::InvalidJsonType(_)  => "invalid JSON type for conversion",
+            ParseError::MissingField(_)     => "missing field",
+        }
+    }
+}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match *self {
+            ParseError::InvalidJsonType(ref e)  => format!("invalid JSON type for conversion to {}", e),
+            ParseError::MissingField(ref e)     => format!("missing field \"{}\"", e),
+        }.to_string())
+    }
+}
+
+pub trait FromJson: Sized {
+    fn from_json(json: &Json) -> Result<Self,ParseError>;
+}
+// conversions for system types
+impl FromJson for String {
+    fn from_json(json: &Json) -> Result<String,ParseError> {
+        match *json {
+            Json::String(ref s) => Ok(s.to_string()),
+            _                   => Err(ParseError::InvalidJsonType("String".to_string())),
+        }
+    }
+}
+impl FromJson for u64 {
+    fn from_json(json: &Json) -> Result<u64,ParseError> {
+        match *json {
+            Json::U64(n) => Ok(n),
+            Json::I64(n) => Ok(n as u64),
+            _            => Err(ParseError::InvalidJsonType("u64".to_string())),
+        }
+    }
+}
+impl FromJson for bool {
+    fn from_json(json: &Json) -> Result<bool,ParseError> {
+        match *json {
+            Json::Boolean(b) => Ok(b),
+            _                => Err(ParseError::InvalidJsonType("bool".to_string())),
+        }
+    }
+}
+impl FromJson for i32 {
+    fn from_json(json: &Json) -> Result<i32,ParseError> {
+        match *json {
+            Json::U64(n) if n <= (i32::MAX as u64)
+                => Ok(n as i32),
+            Json::I64(n) if n >= (i32::MIN as i64) && n <= (i32::MAX as i64)
+                => Ok(n as i32),
+            _ => Err(ParseError::InvalidJsonType("i32".to_string())),
+        }
+    }
+}
+impl FromJson for usize {
+    fn from_json(json: &Json) -> Result<usize,ParseError> {
+        match *json {
+            Json::U64(n) if n <= (usize::MAX as u64)
+                => Ok(n as usize),
+            Json::I64(n) if n >= (usize::MIN as i64) && n <= (usize::MAX as i64)
+                => Ok(n as usize),
+            _ => Err(ParseError::InvalidJsonType("usize".to_string())),
+        }
+    }
+}
+
+impl<T> FromJson for Vec<T> where T: FromJson {
+    fn from_json(json: &Json) -> Result<Vec<T>,ParseError> {
+        match *json {
+            Json::Array(ref a) => {
+                let (ok, mut err): (Vec<_>,Vec<_>)  = a.iter().map(|ref j| T::from_json(j)).partition(|ref r| match **r { Ok(_) => true, Err(_) => false });
+                match err.len() {
+                    0 => Ok(ok.into_iter().map(|r| r.ok().unwrap()).collect()),
+                    _ => Err(err.remove(0).err().unwrap()),
+                }
+            }
+            _ => Err(ParseError::InvalidJsonType("Vec".to_string())),
+        }
+    }
+}
+
+impl<T> FromJson for BTreeMap<String,T> where T: FromJson {
+    fn from_json(json: &Json) -> Result<Self,ParseError> {
+        match *json {
+            Json::Object(ref o) => {
+                let mut m = BTreeMap::<String,T>::new();
+                for (k, v) in o.iter() {
+                    let vv = try!(T::from_json(v));
+                    m.insert(k.clone(), vv);
+                }
+                Ok(m)
+            },
+            _ => Err(ParseError::InvalidJsonType("BTreeMap".to_string()))
+        }
+    }
+}
+
+pub trait FromJsonField: Sized {
+    fn from_json_field(json: &BTreeMap<String,Json>, field: &str) -> Result<Self,ParseError>;
+}
+impl<T> FromJsonField for T where T: FromJson {
+    fn from_json_field(json: &BTreeMap<String,Json>, field: &str) -> Result<Self,ParseError> {
+        match json.get(field) {
+            Some(ref v) => T::from_json(&v),
+            None        => Err(ParseError::MissingField(field.to_string())),
+        }
+    }
+}
+impl<T> FromJsonField for Option<T> where T: FromJson {
+    fn from_json_field(json: &BTreeMap<String,Json>, field: &str) -> Result<Self,ParseError> {
+        match json.get(field) {
+            Some(v) => {
+                match *v {
+                    Json::Null => Ok(None),
+                    _ => match T::from_json(&v) {
+                        Ok(j)  => Ok(Some(j)),
+                        Err(e) => Err(e),
+                    }
+                }
+            }
+            None => Ok(None),
+        }
+    }
+}
+
+pub trait ToJsonField {
+    fn to_json_field(&self, json: &mut BTreeMap<String,Json>, field: &str);
+}
+impl<T> ToJsonField for T where T: ToJson {
+    fn to_json_field(&self, json: &mut BTreeMap<String,Json>, field: &str) {
+        json.insert(field.to_string(), self.to_json());
+    }
+}
+
+macro_rules! json_struct {
+    ($name: ident, $jname: expr,
+     $($field: ident: $ty: ty => $jprop: expr),*) => {
+        #[derive(Clone, PartialEq, Debug)]
+        pub struct $name { 
+            $(pub $field: $ty,)*
+        }
+
+        impl Default for $name {
+            fn default() -> $name {
+                $name {
+                    $($field: Default::default()),*
+                }
+            }
+        }
+
+        impl ToJson for $name {
+            fn to_json(&self) -> Json {
+                let mut d = BTreeMap::<String,Json>::new();
+                $(self.$field.to_json_field(&mut d, $jprop);)*
+                Json::Object(d)
+            }
+        }
+
+        impl FromJson for $name {
+            fn from_json(json: &Json) -> Result<$name,ParseError> {
+                match *json {
+                    Json::Object(ref o) => {
+                        let mut prop = $name::default();
+                        $(prop.$field = try!(FromJsonField::from_json_field(o, $jprop));)*
+                        Ok(prop)
+                    },
+                    _ => Err(ParseError::InvalidJsonType($jname.to_string())),
+                }
+            }
+        }
+    }
+}

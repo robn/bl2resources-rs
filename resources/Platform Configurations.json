@@ -1,0 +1,70 @@
+{
+  "X360": {
+    "asset_library_sets": [
+      {
+        "id": 9, /* Dragon Keep */
+        "libraries": {
+          "ItemTypes": {
+            "sublibrary_remapping": {
+              7:  23, /* GD_Aster_SeraphCrystal */
+              9:  0,  /* GD_Assassin_Items_Aster */
+              10: 1,  /* GD_Mechro_Items_Aster */
+              11: 2,  /* GD_Mercenary_Items_Aster */
+              12: 3,  /* GD_Psycho_Items_Aster */
+              13: 4,  /* GD_Siren_Items_Aster */
+              14: 5,  /* GD_Soldier_Items_Aster */
+              19: 10, /* GD_Aster_Artifacts */
+              20: 11, /* GD_Aster_ClassMods */
+              21: 12, /* GD_Aster_GrenadeMods */
+              22: 13, /* GD_Aster_Shields */
+              
+              /*0: ???,*/
+              /*1: ???,*/
+              /*2: ???,*/
+              /*3: ???,*/
+              /*4: ???,*/
+              /*5: ???,*/
+              /*6: ???,*/
+              /*8: ???,*/
+              /*15: ???,*/
+              /*16: ???,*/
+              /*17: ???,*/
+              /*18: ???,*/
+              /*23: ???,*/
+            }
+          },
+          "BalanceDefs": {
+            "sublibrary_remapping": {
+              7:  22, /* GD_Aster_SeraphCrystal */
+              9:  0,  /* GD_Assassin_Items_Aster */
+              10: 1,  /* GD_Mechro_Items_Aster */
+              11: 2,  /* GD_Mercenary_Items_Aster */
+              12: 3,  /* GD_Psycho_Items_Aster */
+              13: 4,  /* GD_Siren_Items_Aster */
+              14: 5,  /* GD_Soldier_Items_Aster */
+              19: 10, /* GD_Aster_Artifacts */
+              20: 11, /* GD_Aster_GrenadeMods */
+              22: 21, /* GD_Aster_ItemGrades */
+              23: 23, /* GD_Aster_RaidWeapons */
+              24: 24, /* GD_Aster_Weapons */
+              
+              /*0: ???,*/
+              /*1: ???,*/
+              /*2: ???,*/
+              /*3: ???,*/
+              /*4: ???,*/
+              /*5: ???,*/
+              /*6: ???,*/
+              /*8: ???,*/
+              /*15: ???,*/
+              /*16: ???,*/
+              /*17: ???,*/
+              /*18: ???,*/
+              /*21: ???,*/
+            }
+          }
+        }
+      }
+    ]
+  }
+}

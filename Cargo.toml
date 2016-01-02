@@ -1,0 +1,8 @@
+[package]
+name = "bl2resources"
+version = "0.1.0"
+authors = ["Rob N ★ <robn@robn.io>"]
+license = "MIT"
+
+[dependencies]
+rustc-serialize = "*"
