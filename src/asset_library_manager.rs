@@ -26,6 +26,21 @@ json_struct!(AssetLibraryConfig, "AssetLibraryConfig",
     typ:             String => "type"
 );
 
+impl AssetLibraryConfig {
+    pub fn none_index(&self) -> usize {
+        (1 << (self.sublibrary_bits + self.asset_bits)) - 1
+    }
+    pub fn sublibrary_mask(&self) -> usize {
+        (1 << (self.sublibrary_bits - 1)) - 1
+    }
+    pub fn use_set_id_mask(&self) -> usize {
+        1 << (self.sublibrary_bits - 1)
+    }
+    pub fn asset_mask(&self) -> usize {
+        (1 << self.asset_bits) - 1
+    }
+}
+
 json_struct!(AssetLibraryManager, "AssetLibraryManager",
     version: usize                               => "version",
     configs: BTreeMap<String,AssetLibraryConfig> => "configs",
