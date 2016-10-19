@@ -47,4 +47,10 @@ json_struct!(AssetLibraryManager, "AssetLibraryManager",
     sets:    Vec<AssetLibrarySet>                => "sets"
 );
 
+impl AssetLibraryManager {
+    pub fn set_by_id(&self, id: usize) -> Option<&AssetLibrarySet> {
+        self.sets.iter().find(|&set| set.id == id)
+    }
+}
+
 data!(AssetLibraryManager, "Asset Library Manager.json");
